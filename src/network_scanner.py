@@ -30,7 +30,7 @@ def get_ip_addr():
     return local_ip
 
 
-def recv_arp():
+def recv_arp(source):
     """ Scans the current network for arp responses
     """
     # sniff everything
@@ -50,19 +50,19 @@ def recv_arp():
         if ethertype != b'\x08\x06':
             continue
 
-        print("Dest MAC:        ", binascii.hexlify(ethernet_detailed[0]))
-        print("Source MAC:      ", binascii.hexlify(ethernet_detailed[1]))
-        print("Type:            ", binascii.hexlify(ethertype))
-        print("Hardware type:   ", binascii.hexlify(arp_detailed[0]))
-        print("Protocol type:   ", binascii.hexlify(arp_detailed[1]))
-        print("Hardware size:   ", binascii.hexlify(arp_detailed[2]))
-        print("Protocol size:   ", binascii.hexlify(arp_detailed[3]))
-        print("Opcode:          ", binascii.hexlify(arp_detailed[4]))
-        print("Source MAC:      ", binascii.hexlify(arp_detailed[5]))
-        print("Source IP:       ", socket.inet_ntoa(arp_detailed[6]))
-        print("Dest MAC:        ", binascii.hexlify(arp_detailed[7]))
-        print("Dest IP:         ", socket.inet_ntoa(arp_detailed[8]))
-        return
+        ethertype = binascii.hexlify(ethertype)
+        hardware_type = binascii.hexlify(arp_detailed[0]) # pylint: disable=fixme, unused-variable
+        protocol_type = binascii.hexlify(arp_detailed[1]) # pylint: disable=fixme, unused-variable
+        hardware_size = binascii.hexlify(arp_detailed[2]) # pylint: disable=fixme, unused-variable
+        protocol_size = binascii.hexlify(arp_detailed[3]) # pylint: disable=fixme, unused-variable
+        opcode = binascii.hexlify(arp_detailed[4]) # pylint: disable=fixme, unused-variable
+        source_mac = binascii.hexlify(arp_detailed[5])
+        source_ip = socket.inet_ntoa(arp_detailed[6])
+        dest_mac = binascii.hexlify(arp_detailed[7]) # pylint: disable=fixme, unused-variable
+        dest_ip = socket.inet_ntoa(arp_detailed[8])
+        print(dest_ip, " ", get_mac_addr())
+        if dest_ip == get_ip_addr() and source_ip == source:
+            return (source_mac, source_ip)
 
 
 def send_arp():
@@ -94,5 +94,7 @@ def send_arp():
     s.bind((interface, socket.htons(0x0800)))
 
     s.send(arp_packet)
-    recv_arp()
+    recv_arp(dst_ip)
     s.close()
+
+send_arp()
