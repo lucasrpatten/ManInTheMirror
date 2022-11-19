@@ -15,8 +15,8 @@ class NetworkScanner:
     def __init__(self):
         self.get_mac_addr()
         self.get_ip_addr()
-        self.run = True
-        self.net_list: list[tuple(str, str)] = []
+        self.passive_arp = True
+        self.net_list: list[tuple[str, str]] = []
 
     def get_mac_addr(self):
         """get local mac address
@@ -47,7 +47,7 @@ class NetworkScanner:
         sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(
             0x0003))  # pylint: disable=fixme, invalid-name
         while True:
-            if self.run is False:
+            if self.passive_arp is False:
                 break
 
             packet = sock.recvfrom(2048)
@@ -69,15 +69,16 @@ class NetworkScanner:
             hardware_size = binascii.hexlify(arp_detailed[2])  # pylint: disable=fixme, unused-variable
             protocol_size = binascii.hexlify(arp_detailed[3])  # pylint: disable=fixme, unused-variable
             opcode = binascii.hexlify(arp_detailed[4])  # pylint: disable=fixme, unused-variable
-            source_mac = binascii.hexlify(arp_detailed[5])
+            source_mac = binascii.hexlify(arp_detailed[5]).decode()
             source_ip = socket.inet_ntoa(arp_detailed[6])
             dest_mac = binascii.hexlify(arp_detailed[7])  # pylint: disable=fixme, unused-variable
             dest_ip = socket.inet_ntoa(arp_detailed[8])  # pylint: disable=fixme, unused-variable
-            response = (source_ip, source_mac.decode())
+            source_mac = ':'.join(source_mac[i:i+2] for i in range(0, len(source_mac), 2))
+            response = (source_ip, source_mac)
             if response not in self.net_list:
                 self.net_list.append(response)
         sock.close()
-        self.run = True
+        self.passive_arp = True  # continue monitoring
         return
 
     def send_arp(self, ip_number):
@@ -95,7 +96,7 @@ class NetworkScanner:
         htype = 1  # Hardware type: Ethernet
         ptype = 0x0800  # Protocol type: TCP IPV4
         hlen = 6  # Hardware Address Length
-        plen = 4  # Protocl Address Length
+        plen = 4  # Protocol Address Length
         operation = 1  # request operations
         src = socket.inet_aton(self.ip_addr)
         dst = socket.inet_aton(dst_ip)
@@ -110,9 +111,9 @@ class NetworkScanner:
         sock.send(arp_packet)
         sock.close()
 
-    def scan_with_arp(self):
+    def scan_with_arp(self, lower=0, upper=256):
         """Scan all ports with arp"""
-        for i in range(0, 256):
+        for i in range(lower, upper):
             self.send_arp(i)
 
     def scan(self):
@@ -123,17 +124,30 @@ class NetworkScanner:
         arp_receiver.start()
         arp_scanner.start()
         arp_scanner.join()
-        self.run = False
+        self.passive_arp = False  # Stop scanning
         arp_receiver.join()
+
+    def format_menu(self, index, values):
+        """Format Menu Items"""
+        print(f"{index :>5}:  {values[0] :<17}{values[1] :^17}")
 
     def menu(self):
         """Display the menu to choose who to perform attack on
         """
+
         os.system('clear')
-        for i in self.net_list:
-            print(i)
+        menu_items = {
 
-
-ns = NetworkScanner()
-
-ns.scan()
+        }
+        for count, value in enumerate(self.net_list):
+            menu_items[count] = value
+        self.format_menu("Index", ("IP Address", "MAC Address"))
+        for key, value in menu_items.items():
+            self.format_menu(key+1, value)
+        while True:
+            try:
+                target_index: int = int(input("Select the host to attack (via index): "))
+                target_index -= 1  # to get index right
+                return menu_items[target_index]
+            except (ValueError, KeyError) as exception:  # pylint: disable=fixme, unused-variable
+                print("Not a valid input - Please try again")

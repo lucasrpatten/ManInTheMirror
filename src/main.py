@@ -1,7 +1,5 @@
 """Program entry point"""
-from cmd_line_args import Arguments
-
-args = Arguments()
+from cmd_line_args import parse_cmd_line
 
 if __name__ == "__main__":
-    args.parse_cmd_line()
+    parse_cmd_line()
