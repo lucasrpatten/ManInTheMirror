@@ -3,6 +3,7 @@
 import argparse
 
 from network_scanner import NetworkScanner
+from arp_poison import ArpSpoof  # pylint: disable=fixme, no-name-in-module
 
 scanner = NetworkScanner()
 parser = argparse.ArgumentParser(prog="ManInTheMirror")
@@ -21,4 +22,5 @@ def parse_cmd_line():
         print('a')
     else:
         scanner.scan()
-        print(scanner.menu())
+        spoofer = ArpSpoof(scanner)
+        print(spoofer.router_mac)

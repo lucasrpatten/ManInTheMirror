@@ -1,7 +1,9 @@
 """Scans the network"""
 
+import struct
 import os
 import socket
+import subprocess
 import time
 import uuid
 import threading
@@ -44,7 +46,6 @@ class NetworkScanner:
     def scan(self):
         """ Scan the local network
         """
-        scan_arp = True
 
         def recv_arp():
             while scan_arp is True:
@@ -52,6 +53,9 @@ class NetworkScanner:
                 returned_value = self.arp.recv_arp(self.net_list)
                 if returned_value is not None:
                     self.net_list.append(returned_value)
+
+        scan_arp = True
+        print("[*] Scanning...")
 
         arp_receiver = threading.Thread(target=recv_arp)
         arp_scanner = threading.Thread(target=self.scan_with_arp)
@@ -64,7 +68,19 @@ class NetworkScanner:
     def scan_with_arp(self, lower=0, upper=256):
         """Scan all ports with arp"""
         for i in range(lower, upper):
-            self.arp.send_arp(i, self.mac_addr, self.ip_addr)
+            ip = '.'.join([i for i in self.ip_addr.split('.')[:-1]]) + f".{i}"
+            self.arp.send_arp(self.mac_addr, self.ip_addr, ip)
+
+    def get_gate(self):
+        """Read the default gateway directly from /proc."""
+        with open("/proc/net/route", encoding="utf-8") as file:
+            for line in file:
+                fields = line.strip().split()
+                if fields[1] != '00000000' or not int(fields[3], 16) & 2:
+                    # If not default route or not RTF_GATEWAY, skip it
+                    continue
+
+                return socket.inet_ntoa(struct.pack("<L", int(fields[2], 16)))
 
     def format_menu(self, index, values):
         """Format Menu Items"""
@@ -80,9 +96,7 @@ class NetworkScanner:
         }
         for count, value in enumerate(self.net_list):
             menu_items[count] = value
-        menu_items[len(menu_items)+1] = ("All Users", "All Users")
         self.format_menu("Index", ("IP Address", "MAC Address"))
-        print(menu_items)
         for key, value in menu_items.items():
             self.format_menu(key+1, value)
         while True:
