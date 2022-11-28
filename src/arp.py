@@ -45,10 +45,9 @@ class Arp:
                 sock.close()
                 return response
 
-    def send_arp(self, src_mac, src_ip, dst_ip, operation=1, dst_mac=b'\xff\xff\xff\xff\xff\xff'):
+    def send_arp(self, src_mac, src_ip, dst_ip, operation=1, dst_mac=b'\xff\xff\xff\xff\xff\xff', interface=socket.if_nameindex()[1][1]):
         """sends an arp request
         """
-        interface = socket.if_nameindex()[1][1]
 
         protocol = 0x0806  # 0x0806 is reserved for ARP
 

@@ -1,5 +1,6 @@
 """Scans the network"""
 
+import fcntl
 import struct
 import os
 import socket
@@ -20,6 +21,7 @@ class NetworkScanner:
         self.passive_arp = True
         self.net_list: list[tuple[str, str]] = []
         self.arp = Arp()
+        self.interface = socket.if_nameindex()[1][1]
 
     def get_mac_addr(self):
         """get local mac address
@@ -85,6 +87,11 @@ class NetworkScanner:
     def format_menu(self, index, values):
         """Format Menu Items"""
         print(f"{index :>5}:  {values[0] :<17}{values[1] :^17}")
+
+    def get_netmask(self):
+        """Get the subnet mask"""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        return socket.inet_ntoa(fcntl.ioctl(sock.fileno(), 0x891b, struct.pack('256s', self.interface))[20:24])
 
     def menu(self):
         """Display the menu to choose who to perform attack on
