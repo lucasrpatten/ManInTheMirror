@@ -68,8 +68,8 @@ class NetworkScanner:
     def scan_with_arp(self, lower=0, upper=256):
         """Scan all ports with arp"""
         for i in range(lower, upper):
-            ip = '.'.join([i for i in self.ip_addr.split('.')[:-1]]) + f".{i}"
-            self.arp.send_arp(self.mac_addr, self.ip_addr, ip)
+            target = '.'.join([i for i in self.ip_addr.split('.')[:-1]]) + f".{i}"
+            self.arp.send_arp(self.mac_addr, self.ip_addr, target)
 
     def get_gate(self):
         """Read the default gateway directly from /proc."""

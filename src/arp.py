@@ -45,26 +45,23 @@ class Arp:
                 sock.close()
                 return response
 
-    def send_arp(self, mac_addr, ip_addr, dst_ip):
+    def send_arp(self, src_mac, src_ip, dst_ip, operation=1, dst_mac=b'\xff\xff\xff\xff\xff\xff'):
         """sends an arp request
         """
         interface = socket.if_nameindex()[1][1]
 
-        destination = b'\xff\xff\xff\xff\xff\xff'
-
         protocol = 0x0806  # 0x0806 is reserved for ARP
 
-        eth_header = struct.pack("!6s6sH", destination, mac_addr, protocol)
+        eth_header = struct.pack("!6s6sH", dst_mac, src_mac, protocol)
 
         htype = 1  # Hardware type: Ethernet
         ptype = 0x0800  # Protocol type: TCP IPV4
         hlen = 6  # Hardware Address Length
         plen = 4  # Protocol Address Length
-        operation = 1  # request operations
-        src = socket.inet_aton(ip_addr)
+        src = socket.inet_aton(src_ip)
         dst = socket.inet_aton(dst_ip)
         arp_header = struct.pack("!HHBBH6s4s6s4s", htype, ptype,
-                                 hlen, plen, operation, mac_addr, src, destination, dst)
+                                 hlen, plen, operation, src_mac, src, dst_mac, dst)
 
         arp_packet = eth_header + arp_header
 

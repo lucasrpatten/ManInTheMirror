@@ -23,4 +23,4 @@ def parse_cmd_line():
     else:
         scanner.scan()
         spoofer = ArpSpoof(scanner)
-        print(spoofer.router_mac)
+        spoofer.poison()
