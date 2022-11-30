@@ -1,10 +1,8 @@
 """Scans the network"""
 
-import fcntl
 import struct
 import os
 import socket
-import subprocess
 import time
 import uuid
 import threading
@@ -16,23 +14,25 @@ class NetworkScanner:
     """
 
     def __init__(self):
-        self.get_mac_addr()
-        self.get_ip_addr()
+        self.mac_addr = self.get_mac_addr()
+        self.ip_addr = self.get_ip_addr()
         self.passive_arp = True
         self.net_list: list[tuple[str, str]] = []
         self.arp = Arp()
         self.interface = socket.if_nameindex()[1][1]
 
-    def get_mac_addr(self):
+    @staticmethod
+    def get_mac_addr():
         """get local mac address
 
         Returns:
             bytes: mac address
         """
         mac = uuid.UUID(int=uuid.getnode()).hex[-12:]  # mac as 48 bit int
-        self.mac_addr = bytes.fromhex(mac)
+        return bytes.fromhex(mac)
 
-    def get_ip_addr(self):
+    @staticmethod
+    def get_ip_addr():
         """get local ip address
 
         Returns:
@@ -43,7 +43,19 @@ class NetworkScanner:
         s.connect(('12.12.12.12', 6900))
         local_ip = s.getsockname()[0]
         s.close()
-        self.ip_addr = str(local_ip)
+        return str(local_ip)
+
+    @staticmethod
+    def get_gate():
+        """Read the default gateway directly from /proc."""
+        with open("/proc/net/route", encoding="utf-8") as file:
+            for line in file:
+                fields = line.strip().split()
+                if fields[1] != '00000000' or not int(fields[3], 16) & 2:
+                    # If not default route or not RTF_GATEWAY, skip it
+                    continue
+
+                return socket.inet_ntoa(struct.pack("<L", int(fields[2], 16)))
 
     def scan(self):
         """ Scan the local network
@@ -72,44 +84,3 @@ class NetworkScanner:
         for i in range(lower, upper):
             target = '.'.join([i for i in self.ip_addr.split('.')[:-1]]) + f".{i}"
             self.arp.send_arp(self.mac_addr, self.ip_addr, target)
-
-    def get_gate(self):
-        """Read the default gateway directly from /proc."""
-        with open("/proc/net/route", encoding="utf-8") as file:
-            for line in file:
-                fields = line.strip().split()
-                if fields[1] != '00000000' or not int(fields[3], 16) & 2:
-                    # If not default route or not RTF_GATEWAY, skip it
-                    continue
-
-                return socket.inet_ntoa(struct.pack("<L", int(fields[2], 16)))
-
-    def format_menu(self, index, values):
-        """Format Menu Items"""
-        print(f"{index :>5}:  {values[0] :<17}{values[1] :^17}")
-
-    def get_netmask(self):
-        """Get the subnet mask"""
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        return socket.inet_ntoa(fcntl.ioctl(sock.fileno(), 0x891b, struct.pack('256s', self.interface))[20:24])
-
-    def menu(self):
-        """Display the menu to choose who to perform attack on
-        """
-
-        os.system('clear')
-        menu_items = {
-
-        }
-        for count, value in enumerate(self.net_list):
-            menu_items[count] = value
-        self.format_menu("Index", ("IP Address", "MAC Address"))
-        for key, value in menu_items.items():
-            self.format_menu(key+1, value)
-        while True:
-            try:
-                target_index: int = int(input("Select the host to attack (via index): "))
-                target_index -= 1  # to get index right
-                return menu_items[target_index]
-            except (ValueError, KeyError) as exception:  # pylint: disable=fixme, unused-variable
-                print("Not a valid input - Please try again")

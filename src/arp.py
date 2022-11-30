@@ -7,9 +7,10 @@ import struct
 
 
 class Arp:
-    "Arp related methods"
+    """Arp related methods"""
 
-    def recv_arp(self, net_list=[]):
+    @staticmethod
+    def recv_arp(net_list=[]):
         """ Scans the current network for arp responses
         """
         # sniff everything
@@ -45,12 +46,12 @@ class Arp:
                 sock.close()
                 return response
 
-    def send_arp(self, src_mac, src_ip, dst_ip, operation=1, dst_mac=b'\xff\xff\xff\xff\xff\xff', interface=socket.if_nameindex()[1][1]):
+    @staticmethod
+    def send_arp(src_mac, src_ip, dst_ip, operation=1, dst_mac=b'\xff\xff\xff\xff\xff\xff', interface=socket.if_nameindex()[1][1]):
         """sends an arp request
         """
 
         protocol = 0x0806  # 0x0806 is reserved for ARP
-
         eth_header = struct.pack("!6s6sH", dst_mac, src_mac, protocol)
 
         htype = 1  # Hardware type: Ethernet
