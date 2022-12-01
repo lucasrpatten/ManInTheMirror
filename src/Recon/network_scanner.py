@@ -13,11 +13,13 @@ class NetworkScanner:
     """Class containing network scanning tools
     """
 
-    def __init__(self):
+    def __init__(self, method):
         self.mac_addr = self.get_mac_addr()
+        self.scan_method = method
         self.ip_addr = self.get_ip_addr()
         self.passive_arp = True
         self.net_list: list[tuple[str, str]] = []
+        self.ip_list = []
         self.arp = Arp()
         self.interface = socket.if_nameindex()[1][1]
 
@@ -69,18 +71,48 @@ class NetworkScanner:
                     self.net_list.append(returned_value)
 
         scan_arp = True
-        print("[*] Scanning...")
 
         arp_receiver = threading.Thread(target=recv_arp)
-        arp_scanner = threading.Thread(target=self.scan_with_arp)
+        scanner = None
+        if self.scan_method == "arp":
+            scanner = threading.Thread(target=self.scan_with_arp)
+        elif self.scan_method == "tcp":
+            scanner = threading.Thread(target=self.scan_with_tcp)
+        else:
+            RuntimeError("No Scanner Selected")
         arp_receiver.start()
-        arp_scanner.start()
-        arp_scanner.join()
+        print("[*] Sniffing Arp...")
+        scanner.start()
+        print("[*] Scanning...")
+        scanner.join()
         scan_arp = False  # stop scanning
         arp_receiver.join()
 
     def scan_with_arp(self, lower=0, upper=256):
-        """Scan all ports with arp"""
+        """Scan all ports with arp
+        Args:
+            lower (int, optional): Lower IP Range. Defaults to 0.
+            upper (int, optional): Upper IP Range. Defaults to 256.
+        """
         for i in range(lower, upper):
             target = '.'.join([i for i in self.ip_addr.split('.')[:-1]]) + f".{i}"
             self.arp.send_arp(self.mac_addr, self.ip_addr, target)
+        time.sleep(10)
+
+    def scan_with_tcp(self, lower=0, upper=256):
+        """Scan network for connected ip's via tcp
+
+        Args:
+            lower (int, optional): Lower IP Range. Defaults to 0.
+            upper (int, optional): Upper IP Range. Defaults to 256.
+        """
+        socket.setdefaulttimeout(1)
+        for i in range(lower, upper):
+
+            target = '.'.join([i for i in self.ip_addr.split('.')[:-1]]) + f".{i}"
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            res = sock.connect_ex((target, 6910))
+            if res == 0:
+                self.ip_list.append(target)
+            else:
+                pass
