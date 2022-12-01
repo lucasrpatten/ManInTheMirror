@@ -41,7 +41,7 @@ class ArpSpoof(Arp):
                 target_index: int = int(input("Select the host to attack (via index): "))
                 target_index -= 1  # to get index right
                 self.victim = menu_items[target_index]
-                return
+                break
             except (ValueError, KeyError) as exception:  # pylint: disable=fixme, unused-variable
                 print("Not a valid input - Please try again")
 
@@ -57,7 +57,6 @@ class ArpSpoof(Arp):
         while response is None:
             response = self.recv_arp()
         self.router_mac = bytes.fromhex(response[1].replace(':', ''))
-        return
 
     def poison(self):
         """Execute arp spoofing
