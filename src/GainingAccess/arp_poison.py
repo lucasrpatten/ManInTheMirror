@@ -3,7 +3,7 @@ import os
 import threading
 import time
 from arp import Arp
-from Recon.network_scanner import NetworkScanner
+from Recon.scanner import NetworkScanner
 
 
 class ArpSpoof(Arp):

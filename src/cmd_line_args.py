@@ -4,7 +4,7 @@ import argparse
 import os
 import time
 
-from Recon.network_scanner import NetworkScanner
+from Recon.scanner import NetworkScanner
 from GainingAccess.arp_poison import ArpSpoof  # pylint: disable=fixme, no-name-in-module
 
 parser = argparse.ArgumentParser(prog="ManInTheMirror",

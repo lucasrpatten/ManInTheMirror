@@ -1,8 +1,10 @@
 """Scans the network"""
 
+import re
 import struct
 import os
 import socket
+import subprocess
 import time
 import uuid
 import threading
@@ -99,6 +101,15 @@ class NetworkScanner:
             self.arp.send_arp(self.mac_addr, self.ip_addr, target)
         time.sleep(10)
 
+    def get_arp_tables(self):
+        """
+        _Summary: Get current system arp tables
+        """
+        arp_tables = subprocess.check_output(["arp", "-a"]).decode()
+        arp_tables = [re.sub(r"(.*?\()|(\) at)|( \[.*?\] on .*\n)", "", arp_tables).split(" ")
+                      for i in arp_tables.splitlines()]
+        _ = [self.ip_list.append(arp_tables[i]) for i in arp_tables]
+
     def scan_with_tcp(self, lower=0, upper=256):
         """Scan network for connected ip's via tcp
 
@@ -106,13 +117,17 @@ class NetworkScanner:
             lower (int, optional): Lower IP Range. Defaults to 0.
             upper (int, optional): Upper IP Range. Defaults to 256.
         """
-        socket.setdefaulttimeout(1)
+        socket.setdefaulttimeout(.1)
         for i in range(lower, upper):
 
             target = '.'.join([i for i in self.ip_addr.split('.')[:-1]]) + f".{i}"
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            res = sock.connect_ex((target, 6910))
+            # only works with windows devices - need to add ports to get mac, iphone, android, and linux
+            res = sock.connect_ex((target, 135))
+            print(i)
             if res == 0:
                 self.ip_list.append(target)
             else:
                 pass
+        print(self.ip_list)
+        time.sleep(40)
