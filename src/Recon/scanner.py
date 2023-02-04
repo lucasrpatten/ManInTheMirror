@@ -76,7 +76,7 @@ class NetworkScanner:
 
         arp_receiver = threading.Thread(target=recv_arp)
         scanner = None
-        if self.scan_method == "arp":
+        if self.scan_method == "arp":  # Arp
             scanner = threading.Thread(target=self.scan_with_arp)
         elif self.scan_method == "tcp":
             scanner = threading.Thread(target=self.scan_with_tcp)

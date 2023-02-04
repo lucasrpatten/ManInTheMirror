@@ -39,7 +39,7 @@ def parse_cmd_line():
     """Parses command line arguments
     """
     access = None
-    scan = None
+    scan = "arp"
     if args.scanner_type:
         scan = args.scanner_type
     else:
