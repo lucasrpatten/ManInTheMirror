@@ -2,31 +2,23 @@
 
 import re
 import struct
-import os
 import socket
 import subprocess
 import time
 import uuid
 import threading
-from arp import Arp  # pylint: disable=fixme, no-name-in-module
+from arp import ARP
+from dataclasses import dataclass
+from arp import ArpRequest
 
 
-class NetworkScanner:
-    """Class containing network scanning tools
-    """
+class Local:
+    def __init__(self) -> None:
+        self.mac_addr = self.__get_mac_addr()
+        self.ip_addr = self.__get_ip_addr()
+        self.gateway = self.__get_gateway()
 
-    def __init__(self, method):
-        self.mac_addr = self.get_mac_addr()
-        self.scan_method = method
-        self.ip_addr = self.get_ip_addr()
-        self.passive_arp = True
-        self.net_list: list[tuple[str, str]] = []
-        self.ip_list = []
-        self.arp = Arp()
-        self.interface = socket.if_nameindex()[1][1]
-
-    @staticmethod
-    def get_mac_addr():
+    def __get_mac_addr(self) -> bytes:
         """get local mac address
 
         Returns:
@@ -35,23 +27,23 @@ class NetworkScanner:
         mac = uuid.UUID(int=uuid.getnode()).hex[-12:]  # mac as 48 bit int
         return bytes.fromhex(mac)
 
-    @staticmethod
-    def get_ip_addr() -> str:
+    def __get_ip_addr(self) -> str:
         """get local ip address
 
         Returns:
             str(_RetAddress): local ip
         """
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # pylint: disable=fixme, invalid-name
-        # Use invalid/unused IP address
-        s.connect(('127.0.0.1', 6900))
-        local_ip = s.getsockname()[0]
-        s.close()
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        local_ip = sock.getsockname()[0]
+        sock.close()
         return str(local_ip)
 
-    @staticmethod
-    def get_gate():
-        """Read the default gateway directly from /proc."""
+    def __get_gateway(self) -> str:
+        """Read the default gateway directly from /proc.
+
+        Returns:
+            str: default gateway
+        """
         with open("/proc/net/route", encoding="utf-8") as file:
             for line in file:
                 fields = line.strip().split()
@@ -60,6 +52,42 @@ class NetworkScanner:
                     continue
 
                 return socket.inet_ntoa(struct.pack("<L", int(fields[2], 16)))
+
+
+@dataclass
+class Device:
+    hw_addr: str
+    ip_addr: str
+
+
+class NetworkScanner(Local):
+    """Class containing network scanning tools
+    """
+
+    def __init__(self, method):
+        super().__init__()
+        self.scan_method = method
+        self.passive_arp = True
+        self.net_list: list[Device] = []
+        self.local_ips: list[str] = []
+        self.arp = ARP()
+        self.interface = socket.if_nameindex()[1][1]
+
+    def passive_scan(self):
+        """Listen to the local network (quietly)
+        """
+        ETHER_PROTOCOL = 0x0003
+        sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
+                             socket.htons(ETHER_PROTOCOL))
+        while True:
+            packet, address = sock.recvfrom(4096)
+            # Extract the source and destination IP addresses and ports from the packet
+            ip_header = packet[14:34]
+            src_ip = socket.inet_ntoa(ip_header[12:16])
+            dst_ip = socket.inet_ntoa(ip_header[16:20])
+            tcp_header = packet[34:54]
+            src_port = int.from_bytes(tcp_header[0:2], byteorder='big')
+            dst_port = int.from_bytes(tcp_header[2:4], byteorder='big')
 
     def scan(self):
         """ Scan the local network
@@ -97,7 +125,8 @@ class NetworkScanner:
             upper (int, optional): Upper IP Range. Defaults to 256.
         """
         for i in range(lower, upper):
-            target = '.'.join([i for i in self.ip_addr.split('.')[:-1]]) + f".{i}"
+            target = '.'.join(
+                [i for i in self.ip_addr.split('.')[:-1]]) + f".{i}"
             self.arp.send_arp(self.mac_addr, self.ip_addr, target)
         time.sleep(10)
 
@@ -120,7 +149,8 @@ class NetworkScanner:
         socket.setdefaulttimeout(.1)
         for i in range(lower, upper):
 
-            target = '.'.join([i for i in self.ip_addr.split('.')[:-1]]) + f".{i}"
+            target = '.'.join(
+                [i for i in self.ip_addr.split('.')[:-1]]) + f".{i}"
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # only works with windows devices - need to add ports to get mac, iphone, android, and linux
             res = sock.connect_ex((target, 135))
