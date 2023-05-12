@@ -36,15 +36,15 @@ class NetworkScanner:
         return bytes.fromhex(mac)
 
     @staticmethod
-    def get_ip_addr():
+    def get_ip_addr() -> str:
         """get local ip address
 
         Returns:
-            _RetAddress: local ip
+            str(_RetAddress): local ip
         """
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # pylint: disable=fixme, invalid-name
         # Use invalid/unused IP address
-        s.connect(('12.12.12.12', 6900))
+        s.connect(('127.0.0.1', 6900))
         local_ip = s.getsockname()[0]
         s.close()
         return str(local_ip)
@@ -81,7 +81,7 @@ class NetworkScanner:
         elif self.scan_method == "tcp":
             scanner = threading.Thread(target=self.scan_with_tcp)
         else:
-            RuntimeError("No Scanner Selected")
+            raise RuntimeError("No Scanner Selected")
         arp_receiver.start()
         print("[*] Sniffing Arp...")
         scanner.start()
@@ -103,7 +103,7 @@ class NetworkScanner:
 
     def get_arp_tables(self):
         """
-        _Summary: Get current system arp tables
+            Get current system arp tables
         """
         arp_tables = subprocess.check_output(["arp", "-a"]).decode()
         arp_tables = [re.sub(r"(.*?\()|(\) at)|( \[.*?\] on .*\n)", "", arp_tables).split(" ")
