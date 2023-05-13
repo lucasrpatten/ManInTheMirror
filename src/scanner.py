@@ -178,14 +178,14 @@ class NetworkScanner(Local):
 
     def get_hw_addresses(self):
         if self.verbosity > 0:
-            print("[*] Sening ARP requests to get hw addresses...")
+            print("[*] Sending ARP requests to get hw addresses...")
         devices: list[tuple[str, str]] = []
         gateway_mac = ""
         REQUEST_INTERVAL = 5
         RUN_FOR = 30
         start_time = time.monotonic()
         last_request = time.monotonic()
-        while time.monotonic() - start_time < RUN_FOR or gateway_mac == "":
+        while (time.monotonic() - start_time < RUN_FOR or gateway_mac == "") and len(devices) < len(self.local_ips):
             if time.monotonic() - last_request >= REQUEST_INTERVAL:
                 last_request = time.monotonic()
                 for addr in self.local_ips:
@@ -223,4 +223,4 @@ class NetworkScanner(Local):
                             print(
                                 f"[*] New device discovered: MAC={dst_mac}, IP={dst_ip}")
 
-        return self.gateway, gateway_mac, devices
+        return self.mac_addr, self.gateway, gateway_mac, [i for i in devices if i[1] != self.ip_addr]

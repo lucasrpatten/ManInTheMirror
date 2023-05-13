@@ -16,8 +16,8 @@ def disclaimer_signed() -> bool:
             pass
         if line != "I agree":
             print("[!] Disclaimer not accepted")
-            print("Please read disclaimer.txt carefully.")
-            print("Write 'I agree' on the final line to signify your agreement.")
+            print("[*]Please read disclaimer.txt carefully.")
+            print("[*]Write 'I agree' on the final line to signify your agreement.")
             return False
         return True
 

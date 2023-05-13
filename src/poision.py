@@ -4,8 +4,6 @@ import time
 
 
 class ArpPoison:
-    def __init__
-
     @staticmethod
     def poison(local_mac, target_ip, target_mac, gateway_ip, gateway_mac):
         print("[*] Starting ARP Poisoning Attack...")
