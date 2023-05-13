@@ -15,7 +15,13 @@ from progress_bar import ProgressBar
 
 
 class Local:
-    def __init__(self, interface: str) -> None:
+    """Contains information about the local device
+
+    Args:
+        interface (str): Interface to scan
+    """
+
+    def __init__(self, interface: str = socket.if_nameindex()[1][1]) -> None:
         self.interface: str = interface
         self.mac_addr: str = self.__get_mac_addr()
         self.ip_addr: str = self.__get_ip_addr()
@@ -110,8 +116,11 @@ class NetworkScanner(Local):
 
         active.join()
         passive.terminate()
-
-        print(self.local_ips)
+        if self.verbosity > 0:
+            print(
+                f"[*] Network Scan Completed. Found {len(self.local_ips)} IP's")
+        if self.verbosity > 2:
+            print(f"[*] Active IP's {(i for i in self.local_ips)}")
 
     def is_local_ip(self, ip_address):
         """Check if the given IP address is within the same IP network range as the local network"""
@@ -189,9 +198,9 @@ class NetworkScanner(Local):
                 dst_mac = response.tha
                 if (src_mac, src_ip) not in devices:
                     devices.append((src_mac, src_ip))
-                    if self.verbosity > 1:
+                    if self.verbosity > 2:
                         print(
-                            f"New device discovered: MAC={src_mac}, IP={src_ip}")
+                            f"[*] New device discovered: MAC={src_mac}, IP={src_ip}")
                 dst_not_exist = (dst_mac, dst_ip) not in devices
                 not_broadcast = dst_mac not in (
                     "000000000000", "ffffffffffff")
@@ -201,10 +210,4 @@ class NetworkScanner(Local):
                         print(
                             f"[*] New device discovered: MAC={dst_mac}, IP={dst_ip}")
 
-        print(devices)
         return devices
-
-
-a = NetworkScanner(verbosity=3)
-a.scan()
-a.get_hw_addresses()

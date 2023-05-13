@@ -26,4 +26,8 @@ parser.add_argument("--version", action="version",
 
 args = parser.parse_args()
 
+
 s = scanner.NetworkScanner(verbosity=args.verbosity)
+s.scan()
+devices = s.get_hw_addresses()
+print(devices)
