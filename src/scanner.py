@@ -5,30 +5,31 @@ import struct
 import socket
 import subprocess
 import uuid
+import binascii
 from multiprocessing import Process, Manager
 from arp import ARP
-from dataclasses import dataclass
+import time
 from arp import ArpRequest
 import ipaddress
 from progress_bar import ProgressBar
 
 
 class Local:
-    def __init__(self, interface) -> None:
-        self.interface = interface
-        self.mac_addr: bytes = self.__get_mac_addr()
-        self.ip_addr = self.__get_ip_addr()
-        self.gateway = self.__get_gateway()
-        self.subnet_mask = self.__get_subnet_mask()
+    def __init__(self, interface: str) -> None:
+        self.interface: str = interface
+        self.mac_addr: str = self.__get_mac_addr()
+        self.ip_addr: str = self.__get_ip_addr()
+        self.gateway: str = self.__get_gateway()
+        self.subnet_mask: str = self.__get_subnet_mask()
 
-    def __get_mac_addr(self) -> bytes:
+    def __get_mac_addr(self) -> str:
         """get local mac address
 
         Returns:
-            bytes: mac address
+            str: mac address
         """
         mac = uuid.UUID(int=uuid.getnode()).hex[-12:]  # mac as 48 bit int
-        return bytes.fromhex(mac)
+        return mac
 
     def __get_ip_addr(self) -> str:
         """get local ip address
@@ -77,17 +78,31 @@ class Local:
 
 class NetworkScanner(Local):
     """Class containing network scanning tools
+
+    Args:
+        verbosity (int, optional): Logging message verbosity. Defaults to 2.
+            0 = silent, 1 = minimal, 2 = normal, 3 = verbose, 4 = very verbose
+
+        interface(str, optional): Interface to scan with.
+        Defaults to result of socket.if_nameindex()[1][1].
     """
 
-    def __init__(self, verbosity=2, interface=socket.if_nameindex()[1][1]) -> None:
+    def __init__(self, verbosity: int = 2, interface: str = socket.if_nameindex()[1][1]) -> None:
         super().__init__(interface)
-        self.scanning = True
-        self.verbosity = verbosity
+        self.scanning: bool = True
+        self.verbosity: int = verbosity
         self.local_ips = Manager().list()
+        if self.verbosity > 3:
+            print("[*] Local Device Info")
+            print(f"\t[-] Interface: {self.interface}")
+            print(f"\t[-] Mac Address: {self.mac_addr}")
+            print(f"\t[-] IP Address: {self.ip_addr}")
+            print(f"\t[-] Gateway: {self.gateway}")
+            print(f"\t[-] Subnet Mask: {self.subnet_mask}")
 
     def scan(self):
         if self.verbosity > 0:
-            print("[*] Scanning local network")
+            print("[*] Scanning local network...")
         active = Process(target=self.active_scan)
         passive = Process(target=self.passive_scan)
         active.start()
@@ -113,8 +128,7 @@ class NetworkScanner(Local):
         ETHER_PROTOCOL = 0x0003
         sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
                              socket.htons(ETHER_PROTOCOL))
-        print(
-            f"[*] Listening for packets on interface {self.interface} (passive scan)")
+        print("[*] Passive Scanning Started...")
         while self.scanning:
             packet, address = sock.recvfrom(4096)
             # Extract the source and destination IP addresses and ports from the packet
@@ -132,8 +146,7 @@ class NetworkScanner(Local):
 
     def active_scan(self):
         if self.verbosity > 0:
-            print(
-                f"[*] Scanning local network with subnet {self.subnet_mask} and gateway {self.gateway} (active scan)")
+            print("[*] Active Scanning Started...")
         network_addr = f"{self.ip_addr}/{self.subnet_mask}"
         network = ipaddress.IPv4Network(network_addr, strict=False)
         for ip_addr in set(network.hosts()):
@@ -146,29 +159,52 @@ class NetworkScanner(Local):
             return
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                sock.settimeout(0.01)
+                sock.settimeout(0.5)
                 sock.connect((str(ip_addr), 80))
-        except (ConnectionRefusedError):
+        except ConnectionRefusedError:
             self.local_ips.append(str(ip_addr))
-        except (socket.timeout):
+        except socket.timeout:
             pass
         return
 
     def get_hw_addresses(self):
-        devices = []
-        for addr in self.local_ips:
-            ARP.send_arp(self.mac_addr, self.ip_addr, addr,
-                         ARP.OPCODE_REQUEST, interface=self.interface)
-            arp_ip = ""
-            a = ""
-            while arp_ip != addr:
-                a = ARP.recv_arp()
-                if a is not None:
-                    arp_ip = a.spa
+        if self.verbosity > 0:
+            print("[*] Sening ARP requests to get hw addresses...")
+        devices: list[tuple[str, str]] = []
+        REQUEST_INTERVAL = 5
+        RUN_FOR = 30
+        start_time = time.monotonic()
+        last_request = time.monotonic()
+        while time.monotonic() - start_time < RUN_FOR:
+            if time.monotonic() - last_request >= REQUEST_INTERVAL:
+                last_request = time.monotonic()
+                for addr in self.local_ips:
+                    ARP.send_arp(binascii.unhexlify(self.mac_addr), self.ip_addr, addr,
+                                 ARP.OPCODE_REQUEST, interface=self.interface)
+            response = ARP.recv_arp()
+            if response is not None:
+                src_ip = response.spa
+                src_mac = response.sha
+                dst_ip = response.tpa
+                dst_mac = response.tha
+                if (src_mac, src_ip) not in devices:
+                    devices.append((src_mac, src_ip))
+                    if self.verbosity > 1:
+                        print(
+                            f"New device discovered: MAC={src_mac}, IP={src_ip}")
+                dst_not_exist = (dst_mac, dst_ip) not in devices
+                not_broadcast = dst_mac not in (
+                    "000000000000", "ffffffffffff")
+                if not_broadcast and dst_not_exist:
+                    devices.append((dst_mac, dst_ip))
+                    if self.verbosity > 2:
+                        print(
+                            f"[*] New device discovered: MAC={dst_mac}, IP={dst_ip}")
 
-            print(a)
+        print(devices)
+        return devices
 
 
-a = NetworkScanner()
-a.local_ips = ["192.168.1.174"]
+a = NetworkScanner(verbosity=3)
+a.scan()
 a.get_hw_addresses()

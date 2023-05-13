@@ -1,55 +1,29 @@
 """Manages command line arguments"""
 
 import argparse
-import os
-import time
+import scanner
 
-from Recon.scanner import NetworkScanner
-from GainingAccess.arp_poison import ArpSpoof  # pylint: disable=fixme, no-name-in-module
 
 parser = argparse.ArgumentParser(prog="ManInTheMirror",
-                                 description="Suite of tools to perform man in the middle attacks")
+                                 description="Suite of tools to perform man in the middle attacks. Written by lucasrpatten.",
+                                 formatter_class=argparse.RawTextHelpFormatter)
 
-parser.add_argument("-A", "--arp_spoof", action="store_true", help="Perform mitm via ARP poisoning")
-parser.add_argument("-s", "--scanner_type", metavar="SCANNING_METHOD", choices=["arp", "tcp"])
-parser.add_argument("-t", "--thread_count",
-                    help="Set number of threads to run the program with. Default=2 Minimum=2")
+VERBOSITY_HELP = """\
+logging message verbosity (default: %(default)s)
+    0 = silent
+    1 = minimal
+    2 = normal
+    3 = verbose
+    4 = very verbose
+"""
+parser.add_argument("-v", "--verbosity", type=int,
+                    default=2,
+                    help=VERBOSITY_HELP)
+
+parser.add_argument("--version", action="version",
+                    version="%(prog)s v. pre-alpha")
+
 
 args = parser.parse_args()
 
-
-def access_method_menu():
-    """Menu to select required gaining access values if not provided
-    """
-    os.system("clear")
-    selection = None
-    while True:
-        print("[1]: Arp Poisoning")
-        try:
-            selection = int(input("Select method to gain access: "))
-            if selection in [1]:
-                break
-        except ValueError:
-            pass
-        print("Not A Valid Selection\n")
-    return selection
-
-
-def parse_cmd_line():
-    """Parses command line arguments
-    """
-    access = None
-    scan = "arp"
-    if args.scanner_type:
-        scan = args.scanner_type
-    else:
-        pass  # show menu
-    if args.arp_spoof:
-        access = 1  # Code for arp spoofing
-    else:
-        access = access_method_menu()
-    scanner = NetworkScanner(scan)
-    if access == 1:
-        scanner.scan()
-        spoofer = ArpSpoof(scanner)
-        spoofer.poison()
+s = scanner.NetworkScanner(verbosity=args.verbosity)
