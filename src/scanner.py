@@ -180,11 +180,12 @@ class NetworkScanner(Local):
         if self.verbosity > 0:
             print("[*] Sening ARP requests to get hw addresses...")
         devices: list[tuple[str, str]] = []
+        gateway_mac = ""
         REQUEST_INTERVAL = 5
         RUN_FOR = 30
         start_time = time.monotonic()
         last_request = time.monotonic()
-        while time.monotonic() - start_time < RUN_FOR:
+        while time.monotonic() - start_time < RUN_FOR or gateway_mac == "":
             if time.monotonic() - last_request >= REQUEST_INTERVAL:
                 last_request = time.monotonic()
                 for addr in self.local_ips:
@@ -197,17 +198,29 @@ class NetworkScanner(Local):
                 dst_ip = response.tpa
                 dst_mac = response.tha
                 if (src_mac, src_ip) not in devices:
-                    devices.append((src_mac, src_ip))
-                    if self.verbosity > 2:
-                        print(
-                            f"[*] New device discovered: MAC={src_mac}, IP={src_ip}")
+                    if src_ip == self.gateway and gateway_mac == "":
+                        gateway_mac = src_mac
+                        if self.verbosity > 2:
+                            print(
+                                f"[*] Gateway MAC found: MAC={src_mac}")
+                    else:
+                        devices.append((src_mac, src_ip))
+                        if self.verbosity > 2:
+                            print(
+                                f"[*] New device discovered: MAC={src_mac}, IP={src_ip}")
                 dst_not_exist = (dst_mac, dst_ip) not in devices
                 not_broadcast = dst_mac not in (
                     "000000000000", "ffffffffffff")
                 if not_broadcast and dst_not_exist:
-                    devices.append((dst_mac, dst_ip))
-                    if self.verbosity > 2:
-                        print(
-                            f"[*] New device discovered: MAC={dst_mac}, IP={dst_ip}")
+                    if dst_ip == self.gateway and gateway_mac == "":
+                        gateway_mac = dst_mac
+                        if self.verbosity > 2:
+                            print(
+                                f"[*] Gateway MAC found: MAC={dst_mac}")
+                    else:
+                        devices.append((dst_mac, dst_ip))
+                        if self.verbosity > 2:
+                            print(
+                                f"[*] New device discovered: MAC={dst_mac}, IP={dst_ip}")
 
-        return devices
+        return self.gateway, gateway_mac, devices

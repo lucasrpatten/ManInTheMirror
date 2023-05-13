@@ -21,8 +21,6 @@ ManInTheMirror is a tool for research and educational purposes only. It is not i
 - You will not use ManInTheMirror to interfere with the normal operation of any computer system or network.
 - You agree to indemnify and hold the owner of ManInTheMirror harmless from and against any and all claims, losses, damages, liabilities, costs, and expenses (including reasonable attorneys fees) arising out of or in connection with your use of ManInTheMirror.
 
-If you have any other questions regarding legal use of ManInTheMirror, please contact an attorney.
-
 ## ToDo until initial release
 
 - ~~Add ARP Poisoning (completed)~~

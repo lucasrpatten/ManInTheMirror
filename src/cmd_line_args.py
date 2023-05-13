@@ -1,7 +1,6 @@
 """Manages command line arguments"""
 
 import argparse
-import scanner
 
 
 parser = argparse.ArgumentParser(prog="ManInTheMirror",
@@ -25,9 +24,3 @@ parser.add_argument("--version", action="version",
 
 
 args = parser.parse_args()
-
-
-s = scanner.NetworkScanner(verbosity=args.verbosity)
-s.scan()
-devices = s.get_hw_addresses()
-print(devices)
