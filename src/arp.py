@@ -17,7 +17,7 @@ class ArpRequest:
     sha: str
     spa: str
     tha: bytes
-    tpa: bytes
+    tpa: str
 
 
 class ARP:
@@ -59,11 +59,12 @@ class ARP:
             plen=binascii.hexlify(arp_detailed[3]),
             opcode=binascii.hexlify(arp_detailed[4]),
             sha=binascii.hexlify(arp_detailed[5]).decode(),
-            spa=binascii.hexlify(arp_detailed[6]),
+            spa=socket.inet_ntoa(arp_detailed[6]),
             tha=binascii.hexlify(arp_detailed[7]),
             tpa=socket.inet_ntoa(arp_detailed[8])
         )
         sock.close()
+        print(request)
         return request
 
     @staticmethod

@@ -9,7 +9,6 @@ class ProgressBar:
 
     def __iter__(self):
         self.current = 0
-        print(self.current)
         for item in self.iterable:
             yield item
             self.current += 1
@@ -23,3 +22,5 @@ class ProgressBar:
         percent = round(progress * 100, 2)
         sys.stdout.write('\r|%s| %s%% Completed' % (bar, percent))
         sys.stdout.flush()
+        if percent == 100:
+            sys.stdout.write("\n")
