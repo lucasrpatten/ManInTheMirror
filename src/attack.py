@@ -3,11 +3,31 @@ import scanner
 import curses
 import atexit
 
+import subprocess
+
+
+def get_arp_table():
+    # Execute the arp -a command and capture its output
+    output = subprocess.check_output(["arp", "-a"]).decode()
+
+    # Split the output into lines and remove the header and footer
+    lines = output.splitlines()[1:-1]
+
+    # Parse each line to extract the IP address and MAC address
+    arp_table = []
+    for line in lines:
+        parts = line.split()
+        ip_address = parts[1][1:-1]  # remove the parentheses
+        mac_address = parts[3]
+        arp_table.append((ip_address, mac_address))
+
+    return arp_table
+
 
 def get_vendor(mac) -> str:
     with open("mac-vendor.txt", "r", encoding="utf-8") as file:
         for line in file:
-            addr, vendor = line.split()
+            addr, vendor = line.split(maxsplit=1)
             if addr.lower() == mac[:6]:
                 return vendor
     return "unknown"
@@ -41,7 +61,7 @@ def selection(devices):
         title = "SELECT TARGET DEVICE"
         stdscr.addstr(0, int((width - len(title)) / 2), title, curses.A_BOLD)
         for idx, device in enumerate(devices):
-            device_str = f"{device[0]} ({device[1]})\tVendor: {get_vendor(device[0])}"
+            device_str = f"{device[0]} ({device[1]}) Vendor: {get_vendor(device[0])}"
             x = width // 2 - len(device_str) // 2
             y = height // 2 - len(devices) // 2 + idx
             if idx == current_selection:
