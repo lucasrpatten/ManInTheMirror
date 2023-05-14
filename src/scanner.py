@@ -88,7 +88,7 @@ class NetworkScanner(Local):
         verbosity (int, optional): Logging message verbosity.
             0 = silent, 1 = minimal, 2 = normal, 3 = verbose, 4 = very verbose
 
-        interface(str, optional): Interface to scan with.
+        interface(str): Interface to scan with.
     """
 
     def __init__(self, verbosity, interface) -> None:

@@ -15,6 +15,7 @@ Man in the middle attack tool
     - [Report Bugs](#report-bugs)
     - [Suggest Features](#suggest-features)
     - [Contributing Code](#contributing-code)
+    - [More Information](#more-information)
   - [Current Features](#current-features)
   - [Planned Features](#planned-features)
 
@@ -59,7 +60,9 @@ If you have a suggestion for a new feature, please open an issue in the issue tr
 
 If you are a developer, you can contribute code to ManInTheMirror by forking the project on GitHub and submitting a pull request. Be sure to follow the project's coding style and to test your changes thoroughly. Only use builtin python libraries!
 
-We appreciate any contributions to ManInTheMirror, big or small. Thank you for your help!
+### More Information
+
+We appreciate any contributions to ManInTheMirror, big or small. For more information, take a look at our [contributing guide](https://github.com/lucasrpatten/ManInTheMirror/blob/master/CONTRIBUTING.md). Thank you for your help!
 
 ## Current Features
 
