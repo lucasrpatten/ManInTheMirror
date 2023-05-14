@@ -1,6 +1,7 @@
 """Manages command line arguments"""
 
 import argparse
+from socket import if_nameindex
 
 
 parser = argparse.ArgumentParser(prog="ManInTheMirror",
@@ -18,6 +19,9 @@ logging message verbosity (default: %(default)s)
 parser.add_argument("-v", "--verbosity", type=int,
                     default=2,
                     help=VERBOSITY_HELP)
+parser.add_argument("-i", "--interface", type=str,
+                    default=if_nameindex()[1][1],
+                    help="Wireleses interface to use")
 
 parser.add_argument("--version", action="version",
                     version="%(prog)s v. pre-alpha")

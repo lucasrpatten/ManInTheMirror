@@ -1,6 +1,5 @@
 """Program entry point"""
 
-from cmd_line_args import args
 import attack
 
 

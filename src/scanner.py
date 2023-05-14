@@ -1,17 +1,16 @@
 """Scans the network"""
 
-import re
-import struct
-import socket
-import subprocess
-import uuid
 import binascii
-from multiprocessing import Process, Manager
-from arp import ARP
-import time
-from arp import ArpRequest
 import ipaddress
-from progress_bar import ProgressBar
+import re
+import socket
+import struct
+import subprocess
+import time
+import uuid
+from multiprocessing import Manager, Process
+
+from arp import ARP
 
 
 class Local:
@@ -21,7 +20,7 @@ class Local:
         interface (str): Interface to scan
     """
 
-    def __init__(self, interface: str = socket.if_nameindex()[1][1]) -> None:
+    def __init__(self, interface) -> None:
         self.interface: str = interface
         self.mac_addr: str = self.__get_mac_addr()
         self.ip_addr: str = self.__get_ip_addr()
@@ -86,14 +85,13 @@ class NetworkScanner(Local):
     """Class containing network scanning tools
 
     Args:
-        verbosity (int, optional): Logging message verbosity. Defaults to 2.
+        verbosity (int, optional): Logging message verbosity.
             0 = silent, 1 = minimal, 2 = normal, 3 = verbose, 4 = very verbose
 
         interface(str, optional): Interface to scan with.
-        Defaults to result of socket.if_nameindex()[1][1].
     """
 
-    def __init__(self, verbosity: int = 2, interface: str = socket.if_nameindex()[1][1]) -> None:
+    def __init__(self, verbosity, interface) -> None:
         super().__init__(interface)
         self.scanning: bool = True
         self.verbosity: int = verbosity

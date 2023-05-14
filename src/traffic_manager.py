@@ -2,13 +2,13 @@ import socket
 import time
 
 
-def capture_traffic(gateway_ip, gateway_mac, target_ip, target_mac, interface=socket.if_nameindex()[1][1], log_path="log.txt"):
+def capture_traffic(gateway_ip, gateway_mac, target_ip, target_mac, interface, log_path="log.txt"):
     sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
                          socket.ntohs(0x0003))
 
     sock.settimeout(1)
 
-    with open(log_path, "a") as f:
+    with open(log_path, "a", encoding="utf-8") as f:
 
         while True:
             try:
