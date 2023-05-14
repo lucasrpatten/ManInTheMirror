@@ -135,23 +135,21 @@ class NetworkScanner(Local):
         """
 
         ETHER_PROTOCOL = 0x0003
-        sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
-                             socket.htons(ETHER_PROTOCOL))
-        print("[*] Passive Scanning Started...")
-        while self.scanning:
-            packet, address = sock.recvfrom(4096)
-            # Extract the source and destination IP addresses and ports from the packet
-            ip_header = packet[14:34]
-            try:
-                src_ip = socket.inet_ntoa(ip_header[12:16])
-                dst_ip = socket.inet_ntoa(ip_header[16:20])
-            except OSError:
-                continue
-            if self.is_local_ip(src_ip) and src_ip not in self.local_ips and src_ip != self.ip_addr:
-                self.local_ips.append(src_ip)
-            if self.is_local_ip(dst_ip) and dst_ip not in self.local_ips and dst_ip != self.ip_addr:
-                self.local_ips.append(dst_ip)
-        return
+        with socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETHER_PROTOCOL)) as sock:
+            print("[*] Passive Scanning Started...")
+            while self.scanning:
+                packet, _ = sock.recvfrom(4096)
+                # Extract the source and destination IP addresses and ports from the packet
+                ip_header = packet[14:34]
+                try:
+                    src_ip = socket.inet_ntoa(ip_header[12:16])
+                    dst_ip = socket.inet_ntoa(ip_header[16:20])
+                except OSError:
+                    continue
+                if self.is_local_ip(src_ip) and src_ip not in self.local_ips and src_ip != self.ip_addr:
+                    self.local_ips.append(src_ip)
+                if self.is_local_ip(dst_ip) and dst_ip not in self.local_ips and dst_ip != self.ip_addr:
+                    self.local_ips.append(dst_ip)
 
     def active_scan(self):
         if self.verbosity > 0:
